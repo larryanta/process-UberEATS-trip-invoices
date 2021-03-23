@@ -1,6 +1,26 @@
 #!/bin/ksh
-# This software is provided "as is" without warranty of any kind.
 
+Version=1.1
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+#
+# This software is provided "as is" without any warranty of any kind.
+#
+#
+# --------------------------------------------------------------------
+# Version history:
+#   v1.0  Mar 16, 2021  -initial release
+#   v1.1  Mar 23, 2021  -add invoice date to report2 (CSV file)
+#                       -don't crash if tax point date is missing
+# --------------------------------------------------------------------
+#
+# ----------------------------------------
+# Author: Larry Anta (larryanta@gmail.com)
+# ----------------------------------------
+#
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+print $0 Version: $Version
 
 # A tax year must be supplied on the command line.
 if [[ $# != 1 ]]
@@ -71,16 +91,6 @@ eval tripInvoices="~jdoe/UberEATS/TripInvoicePDFs/invoice-ALKUSXZA-03-$TaxYear-*
 # Report3 has separate totals (with/without HST) in case you registered for GST/HST in that
 # tax year.
 #
-#
-# --------------------------------------------------------
-# Version 1.0:  Mar 16, 2021  initial release
-# --------------------------------------------------------
-#
-#
-# -------------------------------------------
-# Author: Larry Anta (larryanta@gmail.com)
-# -------------------------------------------
-#
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 
@@ -141,7 +151,7 @@ echo ' '
 # Create report2, a CSV file with selected fields from the trip invoices.
 # (Keep running totals of some of those fields for later use in report3.)
 print Generating report2...
-echo "InvoiceNumber,TaxPointDate,Restaurant,GSTNumber,TotalNet,TotalHST,GrossAmt" >> $report2Name
+echo "InvoiceNumber,InvoiceDate,TaxPointDate,Restaurant,GSTNumber,TotalNet,TotalHST,GrossAmt" >> $report2Name
 grandTotalNetAll=0.00
 grandTotalNetOnlyHstInvoices=0.00
 grandTotalHST=0.00
@@ -170,11 +180,28 @@ EOF
   set $(grep '^Invoice Number: ' work1)
   InvoiceNumber=$3
 
+  # Grab the invoice date
+  set $(grep '^Invoice Date: ' work1)
+  InvoiceDate="$3 $4 $5"
+
   # The tax point date is assumed to be the line immediately before
   # the line that starts with the text 'Delivery service'.  The
   # date is in three separate tokens, eg. 'Jan' '22,' '2021'.
-  set $(grep -B1 '^Delivery service' work1)
-  TaxPointDate="$1 $2 $3"
+  #
+  # Note: Sometime around March 15, 2021, I started to see trip invoices
+  #       that do not have a tax point date.  Those same invoices do not
+  #       have a line that starts with 'Delivery service' either.  So if
+  #       we don't see 'Delivery service' at the beginning of a line
+  #       anywhere on the invoice, then I'm setting the tax point date
+  #       to 'notSpecified'.
+  TaxPointDate="notSpecified"
+  grep -B1 '^Delivery service' work1 > /dev/null 2>&1
+  rc=$?
+  if (( rc==0 ))
+  then
+    set $(grep -B1 '^Delivery service' work1)
+    TaxPointDate="$1 $2 $3"
+  fi
 
   # The restaurant name is assumed to be the third line.  Since the number
   # of words in a restaurant's name is unpredictable, just concatenate
@@ -226,17 +253,18 @@ EOF
     (( grandTotalGrossOnlyHstInvoices+=GrossAmt ))
   fi
 
-  # We have everything we need for the next row of the CSV file, but the date has a comma in
-  # it and the restaurant name can conceivably contain commas too.  Enclose both of those
-  # fields in double quotes so the row will conform with CSV-file rules.  Write out this new
-  # row.
-  echo "$InvoiceNumber,\"$TaxPointDate\",\"$Restaurant\",$GSTNumber,$TotalNet,$TotalHST,$GrossAmt" >> $report2Name
+  # We have everything we need for the next row of the CSV file, but the invoice date and tax
+  # point date each have a comma in them.  The restaurant name can conceivably contain commas
+  # too.  Enclose all three of these fields in double quotes so that the row will conform to
+  # CSV-file rules.  Write out this new row.
+  echo "$InvoiceNumber,\"$InvoiceDate\",\"$TaxPointDate\",\"$Restaurant\",$GSTNumber,$TotalNet,$TotalHST,$GrossAmt" >> $report2Name
   (( invoiceCount+=1 ))
   (( grandTotalHST+=TotalHST ))
   print -n "$invoiceCount "
 done
 echo ' '
 rm -f work1
+set +x
 
 
 # Create a summary report (report3).
