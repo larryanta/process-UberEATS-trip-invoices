@@ -1,10 +1,16 @@
 #!/bin/ksh
 
-Version=1.1
+Version=1.2
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #
 # This software is provided "as is" without any warranty of any kind.
+#
+# Before using this script, these packages must be installed:
+#
+#    ksh    (yum install ksh)
+#    python (yum install python)
+#    PyPDF2 (yum install PyPDF2)
 #
 #
 # --------------------------------------------------------------------
@@ -12,6 +18,8 @@ Version=1.1
 #   v1.0  Mar 16, 2021  -initial release
 #   v1.1  Mar 23, 2021  -add invoice date to report2 (CSV file)
 #                       -don't crash if tax point date is missing
+#   v1.2  Mar 25, 2021  -add more background info to the comments to
+#                        help you decide whether to use this script
 # --------------------------------------------------------------------
 #
 # ----------------------------------------
@@ -33,12 +41,6 @@ fi
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #
-# Before using this script, these packages must be installed:
-#
-#    ksh    (yum install ksh)
-#    python (yum install python)
-#    PyPDF2 (yum install PyPDF2)
-#
 # You must edit the values of PyPDF2location and tripInvoices below.  PyPDF2location is
 # where you installed the PyPDF2 package, while tripInvoices is where this script will
 # search for Uber Eats trip invoices.
@@ -53,27 +55,52 @@ eval tripInvoices="~jdoe/UberEATS/TripInvoicePDFs/invoice-ALKUSXZA-03-$TaxYear-*
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 
-
-
-
-
-
-
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+#
+# Backgound
+# =========
+#
+# As of March, 2021, Intuit, the makers of TurboTax, are of the opinion that food delivery
+# drivers do not remit HST to the CRA, but they are eligible to recover HST they have paid
+# on their own expenses by claiming Input Tax Credits (ITCs).  That's my reading of their
+# excellent article "GST/HST Reporting Requirements For Food Delivery Services" by Hebatollah
+# El-Kady which they posted on December 1, 2020.
+#
+# But Uber appears to be giving restaurants the GST registration numbers of its drivers.
+# Worse, they are charging the restaurant HST (at 13% here in Ontario) and stating right in
+# the invoice that the invoice was created on behalf of the driver.  The invoices shows
+# the DRIVER's name and the DRIVER's GST registration number.
+#
+# You can find these trip invoices by logging in to your account at drivers.uber.com and
+# clicking on the INVOICES link.
+#
+# Furthermore, when you exclude the tip that the end-customer might have given you, the gross
+# amount of the invoice matches the amount you were paid by Uber.
+#
+# In other words, if you follow the HST, it was charged at 13% (in Ontario) by Uber, paid
+# to Uber by the restaurant, and given to the driver by Uber.  In my opinion, that HST
+# must now be remitted to the CRA by the DRIVER.
+#
+# I absolutely trust the advice of Intuit; I believe they describe how things should be
+# with drivers and HST but it seems to me that Uber is not following these rules.
+#
+# Since this has not been resolved by the CRA, it's unclear what you should do since even
+# HST that is collected in error must be remitted to the CRA.
+#
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #
-# Uber Eats charges restaurants for the delivery services of its drivers and gives the driver a
-# copy of the trip invoice.  The driver can see these trip invoices by clicking on the INVOICES
-# link at drivers.uber.com.
+# What this script does
+# =====================
 #
-# If a driver registers for a GST/HST number (either because they had to or because they chose
-# to), Uber Eats is obliged to tack on 13% HST (in Ontario).  The driver's GST/HST number is
-# shown on the invoice and the HST must be remitted to the CRA by the driver.
-#
-# Each trip invoice is a PDF file and a driver can have hundreds or even thousands of them in a
-# given year.  Uber Eats does not add up the amounts shown in all these trip invoices.  This
-# script does that for you.
+# Each trip invoice is a PDF file and a driver can have hundreds or even thousands of them
+# in a given year.  Uber Eats does not add up the amounts shown in all these trip invoices.
+# If you have read the above background information and you choose to remit the HST collected
+# on your trip invoices, this script can help by extracting the relevant fields directly from
+# the PDF files themselves and adding up the dollar amounts that you will need when filing
+# your GST/HST statement.
 #
 # The tax year is embedded into each trip invoice's file name.  For example, the trip invoice
 # named invoice-ALKUSXZA-03-2021-0000245.pdf was the 245th invoice for tax year 2021.
