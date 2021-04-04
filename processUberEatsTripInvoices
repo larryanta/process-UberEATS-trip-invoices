@@ -1,6 +1,6 @@
 #!/bin/ksh
 
-Version=1.2
+Version=1.3
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #
@@ -13,14 +13,15 @@ Version=1.2
 #    PyPDF2 (yum install PyPDF2)
 #
 #
-# --------------------------------------------------------------------
+# -----------------------------------------------------------------------------------
 # Version history:
 #   v1.0  Mar 16, 2021  -initial release
 #   v1.1  Mar 23, 2021  -add invoice date to report2 (CSV file)
 #                       -don't crash if tax point date is missing
 #   v1.2  Mar 25, 2021  -add more background info to the comments to
 #                        help you decide whether to use this script
-# --------------------------------------------------------------------
+#   v1.3  Apr  4, 2021  -speed up the creation of report2 (CSV file) substantially
+# -----------------------------------------------------------------------------------
 #
 # ----------------------------------------
 # Author: Larry Anta (larryanta@gmail.com)
@@ -50,7 +51,12 @@ eval PyPDF2location="~jdoe/PyPDF2-1.26.0"
 eval tripInvoices="~jdoe/UberEATS/TripInvoicePDFs/invoice-ALKUSXZA-03-$TaxYear-*.pdf"
 #
 #
-# You shouldn't have to change any lines below this one.
+# This script compiles the two C programs it needs (rpt2pgm.c and rpt3pgm.c), or you
+# can compile them yourself if you wish.
+#
+#
+# You shouldn't have to change any lines below this one.  Nor should you have to
+# change anything in the C programs.
 #
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
@@ -74,12 +80,12 @@ eval tripInvoices="~jdoe/UberEATS/TripInvoicePDFs/invoice-ALKUSXZA-03-$TaxYear-*
 # You can find these trip invoices by logging in to your account at drivers.uber.com and
 # clicking on the INVOICES link.
 #
-# Furthermore, when you exclude the tip that the end-customer might have given you, the gross
-# amount of the invoice matches the amount you were paid by Uber.
+# When you exclude the tip that the end-customer might have given you, the gross amount
+# of the invoice matches the amount you were paid by Uber.
 #
-# In other words, if you follow the HST, it was charged at 13% (in Ontario) by Uber, paid
-# to Uber by the restaurant, and given to the driver by Uber.  In my opinion, that HST
-# must now be remitted to the CRA by the DRIVER.
+# In other words, the HST was charged at 13% (in Ontario) by Uber, paid to Uber by the
+# restaurant, and given to the driver by Uber.  In my opinion, that HST must now be
+# remitted to the CRA by the DRIVER.
 #
 # I absolutely trust the advice of Intuit; I believe they describe how things should be
 # with drivers and HST but it seems to me that Uber is not following these rules.
@@ -108,10 +114,12 @@ eval tripInvoices="~jdoe/UberEATS/TripInvoicePDFs/invoice-ALKUSXZA-03-$TaxYear-*
 # Unfortunately, you have to download each trip invoice pdf file manually and store them
 # somewhere on your Linux box.  If you do it daily or weekly it's not so bad.
 #
-# The following reports are created and saved on disk for you.  The third report is displayed
-# on your screen and should help you with lines 101 and 103 of your GST/HST return.
+# The following reports are created and saved on disk for you.  The third report is also
+# displayed on your screen and should help you with lines 101 and 103 of your GST/HST
+# return.
 #
-#    report1:  the raw text contained in all the PDF files for the given tax year
+#    report1:  the raw text contained in all the PDF files for the given tax year with
+#              each invoice separated from the next with a row of equal signs
 #    report2:  selected fields from the same PDF files (in CSV format)
 #    report3:  grand totals of all the trip invoices (and of just those with HST applied)
 #
@@ -140,16 +148,61 @@ then
 fi
 
 
-# Silently delete report files from previous runs.
+# Report1 is created by this script.  To increase speed, report2 and
+# report3 are created by invoking C programs:
+#
+#   Source File  Language  Binary executable
+#   ===========  ========  =================
+#    rpt2pgm.c       C         rpt2pgm
+#    rpt3pgm.c       C         rpt3pgm
+
+
+# Make sure binary executable rpt2pgm is ready to run.  Compile it if necessary.
+if [[ ! -x rpt2pgm ]] then;
+  if [[ ! -s rpt2pgm.c ]] then;
+    print "Need to compile C program rpt2pgm.c but can't find it.  Aborting."
+    exit 3
+  else
+    print "Compiling rpt2pgm.c..."
+    print "cc -o rpt2pgm rpt2pgm.c"
+    cc -o rpt2pgm rpt2pgm.c
+    if [[ ! -x rpt2pgm ]] then;
+      print "Compilation of rpt2pgm.c must have failed.  Aborting."
+      exit 4
+    fi
+  fi
+fi
+
+
+# Repeat for rpt3pgm.
+if [[ ! -x rpt3pgm ]] then;
+  if [[ ! -s rpt3pgm.c ]] then;
+    print "Need to compile C program rpt3pgm.c but can't find it.  Aborting."
+    exit 5
+  else
+    print "Compiling rpt3pgm.c..."
+    print "cc -o rpt3pgm rpt3pgm.c"
+    cc -o rpt3pgm rpt3pgm.c
+    if [[ ! -x rpt3pgm ]] then;
+      print "Compilation of rpt3pgm.c must have failed.  Aborting."
+      exit 6
+    fi
+  fi
+fi
+
+
+# We're ready to rock.  Silently delete report files from previous runs.
 rm -f $report1Name
 rm -f $report2Name
 rm -f $report3Name
 
 
 # Create report1 showing the raw text from all the invoices for the given tax year.
+# Separate the invoices from each other with a row of equal signs.
 print Generating report1...
-echo "Raw text of all trip invoices for tax year $TaxYear        Report date: $todaysDate"              >> $report1Name
-echo "================================================================================================" >> $report1Name
+exec 4> $report1Name
+echo "Raw text of all trip invoices for tax year $TaxYear        Report date: $todaysDate"              >&4
+echo "================================================================================================" >&4
 invoiceCount=0
 for x in $tripInvoices
 do
@@ -171,160 +224,26 @@ EOF
   echo "================================================================================================"
   (( invoiceCount+=1 ))
   print -n "$invoiceCount ">$(tty)
-done >> $report1Name
+done >&4
+exec 4>&-  # Explicity close report1.
 echo ' '
 
 
 # Create report2, a CSV file with selected fields from the trip invoices.
-# (Keep running totals of some of those fields for later use in report3.)
-print Generating report2...
-echo "InvoiceNumber,InvoiceDate,TaxPointDate,Restaurant,GSTNumber,TotalNet,TotalHST,GrossAmt" >> $report2Name
-grandTotalNetAll=0.00
-grandTotalNetOnlyHstInvoices=0.00
-grandTotalHST=0.00
-grandTotalGrossAll=0.00
-grandTotalGrossOnlyHstInvoices=0.00
-invoiceCount=0
-invoiceCountHST=0
-for x in $tripInvoices
-do
-  # Extract the raw text from the PDF file.
-  python <<EOF >| work1
-# This Python program, adapted from https://automatetheboringstuff.com/chapter13,
-# extracts the text from the first page of a PDF file.
-import sys
-sys.path.append("$PyPDF2location")
-import PyPDF2
-reload(sys)
-sys.setdefaultencoding('utf8')
-pdfFileObj = open("$x", 'rb')
-pdfReader = PyPDF2.PdfFileReader(pdfFileObj)
-pdfReader.numPages
-pageObj = pdfReader.getPage(0)
-print pageObj.extractText()
-EOF
-  # Grab the invoice number.
-  set $(grep '^Invoice Number: ' work1)
-  InvoiceNumber=$3
-
-  # Grab the invoice date
-  set $(grep '^Invoice Date: ' work1)
-  InvoiceDate="$3 $4 $5"
-
-  # The tax point date is assumed to be the line immediately before
-  # the line that starts with the text 'Delivery service'.  The
-  # date is in three separate tokens, eg. 'Jan' '22,' '2021'.
-  #
-  # Note: Sometime around March 15, 2021, I started to see trip invoices
-  #       that do not have a tax point date.  Those same invoices do not
-  #       have a line that starts with 'Delivery service' either.  So if
-  #       we don't see 'Delivery service' at the beginning of a line
-  #       anywhere on the invoice, then I'm setting the tax point date
-  #       to 'notSpecified'.
-  TaxPointDate="notSpecified"
-  grep -B1 '^Delivery service' work1 > /dev/null 2>&1
-  rc=$?
-  if (( rc==0 ))
-  then
-    set $(grep -B1 '^Delivery service' work1)
-    TaxPointDate="$1 $2 $3"
-  fi
-
-  # The restaurant name is assumed to be the third line.  Since the number
-  # of words in a restaurant's name is unpredictable, just concatenate
-  # words together until a word of length zero is encountered.  If a
-  # restaurant name is more than 8 words long, it's truncated to 8 words.
-  # (We could short circuit the 'if' statements below but it's hardly
-  # worth it and would complicate the code.)
-  set $(head -3 work1 | tail -1)
-  Restaurant=$1
-  if (( ${#2} != 0 )); then Restaurant="$Restaurant $2"; fi
-  if (( ${#3} != 0 )); then Restaurant="$Restaurant $3"; fi
-  if (( ${#4} != 0 )); then Restaurant="$Restaurant $4"; fi
-  if (( ${#5} != 0 )); then Restaurant="$Restaurant $5"; fi
-  if (( ${#6} != 0 )); then Restaurant="$Restaurant $6"; fi
-  if (( ${#7} != 0 )); then Restaurant="$Restaurant $7"; fi
-  if (( ${#8} != 0 )); then Restaurant="$Restaurant $8"; fi
-
-  # The restaurant's GST registration number is on a line
-  # that begins with the text 'GST Registration Number:'.
-  set $(grep '^GST Registration Number:' work1)
-  GSTNumber=$4
-
-  # Every invoice has a net amount.  It's the value found on the line
-  # following the line that starts with the text 'Total Net'.
-  set $(grep -A1 '^Total Net' work1 | tail -1)
-  TotalNet=$1
-  (( grandTotalNetAll+=TotalNet ))
-
-  # Every invoice has a gross amount.  It's the value on the line
-  # following the line that starts with the text 'Gross Amount'.
-  set $(grep -A1 '^Gross Amount' work1 | tail -1)
-  GrossAmt=$1
-  (( grandTotalGrossAll+=GrossAmt ))
-
-  # Only trip invoices that contain a line that starts with the
-  # text 'Total HST Amount' have had HST added to the bill.  In
-  # that case the HST amount is on the line following that one.
-  # For invoices that don't contain that text, we set the HST
-  # amount to 0.00.
-  TotalHST=0.00
-  grep  '^Total HST Amount' work1 > /dev/null 2>&1
-  rc=$?
-  if (( rc == 0 ))
-  then
-    set $(grep -A1 '^Total HST Amount' work1 | tail -1)
-    TotalHST=$1
-    (( invoiceCountHST+=1 ))
-    (( grandTotalNetOnlyHstInvoices+=TotalNet ))
-    (( grandTotalGrossOnlyHstInvoices+=GrossAmt ))
-  fi
-
-  # We have everything we need for the next row of the CSV file, but the invoice date and tax
-  # point date each have a comma in them.  The restaurant name can conceivably contain commas
-  # too.  Enclose all three of these fields in double quotes so that the row will conform to
-  # CSV-file rules.  Write out this new row.
-  echo "$InvoiceNumber,\"$InvoiceDate\",\"$TaxPointDate\",\"$Restaurant\",$GSTNumber,$TotalNet,$TotalHST,$GrossAmt" >> $report2Name
-  (( invoiceCount+=1 ))
-  (( grandTotalHST+=TotalHST ))
-  print -n "$invoiceCount "
-done
-echo ' '
-rm -f work1
-set +x
-
+./rpt2pgm $report1Name $report2Name
+rc=$?
+if ((rc!=0)) then;
+  print "Error creating report2.  (RC:$rc)  Aborting."
+  exit 7
+fi
 
 # Create a summary report (report3).
-print 'Generating report3...\n'
-echo "Trip invoice summary for tax year $TaxYear        Report date: $todaysDate"              >> $report3Name
-echo "=======================================================================================" >> $report3Name
-if (( invoiceCount == 1 ))
-then
-  print "\n$invoiceCount trip invoice was found for this tax year."                            >> $report3Name
-else
-  print "\n$invoiceCount trip invoices were found for this tax year."                          >> $report3Name
+./rpt3pgm $TaxYear "'$todaysDate'" $report2Name $report3Name
+rc=$?
+if ((rc!=0)) then;
+  print "Error creating report3.  (RC:$rc)  Aborting."
+  exit 8
 fi
-print "$invoiceCountHST of them had HST applied.\n"                                            >> $report3Name
-
-print "Totals for ALL trip invoices"                                                           >> $report3Name
-print "============================"                                                           >> $report3Name
-print -n "     Net: $"                                                                         >> $report3Name
-echo $grandTotalNetAll   | awk '{printf "%10.2f\n", $1}'                                       >> $report3Name
-print -n "Plus HST: $"                                                                         >> $report3Name
-echo $grandTotalHST   | awk '{printf "%10.2f\n", $1}'                                          >> $report3Name
-print "          ==========="                                                                  >> $report3Name
-print -n "   Total: $"                                                                         >> $report3Name
-echo $grandTotalGrossAll | awk '{printf "%10.2f\n", $1}'                                       >> $report3Name
-
-print "\nTotals for ONLY the trip invoices that have HST applied"                              >> $report3Name
-print "======================================================="                                >> $report3Name
-print -n "     Net: $"                                                                         >> $report3Name
-echo $grandTotalNetOnlyHstInvoices   | awk '{printf "%10.2f\n", $1}'                           >> $report3Name
-print -n "Plus HST: $"                                                                         >> $report3Name
-echo $grandTotalHST   | awk '{printf "%10.2f\n", $1}'                                          >> $report3Name
-print "          ==========="                                                                  >> $report3Name
-print -n "   Total: $"                                                                         >> $report3Name
-echo $grandTotalGrossOnlyHstInvoices | awk '{printf "%10.2f\n", $1}'                           >> $report3Name
 
 
 # Display report3 on the screen.
