@@ -1,6 +1,6 @@
 #!/bin/ksh
 
-Version=1.3
+Version=1.4
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #
@@ -21,6 +21,7 @@ Version=1.3
 #   v1.2  Mar 25, 2021  -add more background info to the comments to
 #                        help you decide whether to use this script
 #   v1.3  Apr  4, 2021  -speed up the creation of report2 (CSV file) substantially
+#   v1.4  Apr 14, 2021  -modify tripInvoices expression
 # -----------------------------------------------------------------------------------
 #
 # ----------------------------------------
@@ -44,11 +45,12 @@ fi
 #
 # You must edit the values of PyPDF2location and tripInvoices below.  PyPDF2location is
 # where you installed the PyPDF2 package, while tripInvoices is where this script will
-# search for Uber Eats trip invoices.
+# search for Uber Eats trip invoices.  Replace the Xs with your own Uber-provided invoice
+# name string.
 #
 #
 eval PyPDF2location="~jdoe/PyPDF2-1.26.0"
-eval tripInvoices="~jdoe/UberEATS/TripInvoicePDFs/invoice-ALKUSXZA-03-$TaxYear-*.pdf"
+eval tripInvoices="~jdoe/UberEATS/TripInvoicePDFs/invoice-XXXXXXXX-03-$TaxYear-*.pdf"
 #
 #
 # This script compiles the two C programs it needs (rpt2pgm.c and rpt3pgm.c), or you
