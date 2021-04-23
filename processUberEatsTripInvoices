@@ -1,6 +1,6 @@
 #!/bin/ksh
 
-Version=1.4
+Version=1.5
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #
@@ -22,6 +22,7 @@ Version=1.4
 #                        help you decide whether to use this script
 #   v1.3  Apr  4, 2021  -speed up the creation of report2 (CSV file) substantially
 #   v1.4  Apr 14, 2021  -modify tripInvoices expression
+#   v1.5  Apr 23, 2021  -modify tripInvoices expression
 # -----------------------------------------------------------------------------------
 #
 # ----------------------------------------
@@ -111,7 +112,7 @@ eval tripInvoices="~jdoe/UberEATS/TripInvoicePDFs/invoice-XXXXXXXX-03-$TaxYear-*
 # your GST/HST statement.
 #
 # The tax year is embedded into each trip invoice's file name.  For example, the trip invoice
-# named invoice-ALKUSXZA-03-2021-0000245.pdf was the 245th invoice for tax year 2021.
+# named invoice-XXXXXXXX-03-2021-0000245.pdf was the 245th invoice for tax year 2021.
 #
 # Unfortunately, you have to download each trip invoice pdf file manually and store them
 # somewhere on your Linux box.  If you do it daily or weekly it's not so bad.
