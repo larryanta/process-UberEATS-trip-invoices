@@ -1,6 +1,6 @@
 #!/bin/ksh
 
-Version=1.5
+Version=1.6
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #
@@ -23,6 +23,7 @@ Version=1.5
 #   v1.3  Apr  4, 2021  -speed up the creation of report2 (CSV file) substantially
 #   v1.4  Apr 14, 2021  -modify tripInvoices expression
 #   v1.5  Apr 23, 2021  -modify tripInvoices expression
+#   v1.6  Apr 23, 2021  -test git repo
 # -----------------------------------------------------------------------------------
 #
 # ----------------------------------------
