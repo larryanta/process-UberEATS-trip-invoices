@@ -1,23 +1,23 @@
 /*
- *   #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
- *   #
- *   #   processUberEatsTripInvoices   Extract dollar amounts from UberEATS pdf trip invoices
- *   #   Copyright (C) 2021  Larry Anta
- *   #
- *   #   This program is free software: you can redistribute it and/or modify
- *   #   it under the terms of the GNU General Public License as published by
- *   #   the Free Software Foundation, either version 3 of the License, or
- *   #   (at your option) any later version.
- *   #
- *   #   This program is distributed in the hope that it will be useful,
- *   #   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   #   GNU General Public License for more details.
- *   #
- *   #   You should have received a copy of the GNU General Public License
- *   #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *   #
- *   #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+ *   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+ *   @
+ *   @   processUberEatsTripInvoices   Extract dollar amounts from UberEATS pdf trip invoices
+ *   @   Copyright (C) 2021  Larry Anta
+ *   @
+ *   @   This program is free software: you can redistribute it and/or modify
+ *   @   it under the terms of the GNU General Public License as published by
+ *   @   the Free Software Foundation, either version 3 of the License, or
+ *   @   (at your option) any later version.
+ *   @
+ *   @   This program is distributed in the hope that it will be useful,
+ *   @   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   @   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   @   GNU General Public License for more details.
+ *   @
+ *   @   You should have received a copy of the GNU General Public License
+ *   @   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *   @
+ *   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
  */
 
 #include <stdio.h>
@@ -152,6 +152,7 @@ int main(int argc, char *argv[]) {
         if ( buffer[strlen(buffer)-1] == '\n' )  /* If a newline is present, */
           buffer[strlen(buffer)-1] = '\0';       /*   replace it with a nul. */
 
+
         /* Position a pointer at the start of the net amount (one byte past the third-last comma). */
         p=buffer+strlen(buffer);     /* point to the last byte of the line (the nul byte) */
         while ( *p-- != ',' )
@@ -164,6 +165,7 @@ int main(int argc, char *argv[]) {
           ;
         p++;
         p++;
+
 
         /* Grab the net amount.  (Go forward to the second-last comma.) */
         i=0;
@@ -187,6 +189,7 @@ int main(int argc, char *argv[]) {
           charGross[i++]=*p++;
         charGross[i]='\0';
 
+
         /*
          *  For 100% accuracy let's avoid floating point values.  Get
          *  rid of the decimal point in the net amount so we can work
@@ -202,6 +205,7 @@ int main(int argc, char *argv[]) {
         p--;
         *p='\0';
 
+
         /* Do the same for the HST amount. */
         p = charHst;
         while ( *p++ != '.' )
@@ -212,6 +216,7 @@ int main(int argc, char *argv[]) {
         }
         p--;
         *p='\0';
+
 
         /* And for the gross amount. */
         p = charGross;
@@ -224,6 +229,7 @@ int main(int argc, char *argv[]) {
         p--;
         *p='\0';
 
+
         /* Convert the net amount string to an integer. */
         errno=0;
         net = strtoul(charNet,&q,10);
@@ -231,6 +237,7 @@ int main(int argc, char *argv[]) {
           printf("%s\nFormat of net amount value in above line is incorrect.  Aborting.\n",buffer);
           return 10;
         }
+
 
         /* Do the same for the HST amount. */
         errno=0;
@@ -240,6 +247,7 @@ int main(int argc, char *argv[]) {
           return 11;
         }
 
+
         /* And the same for the gross amount. */
         errno=0;
         gross = strtoul(charGross,&q,10);
@@ -247,6 +255,7 @@ int main(int argc, char *argv[]) {
           printf("%s\nFormat of gross amount value in above line is incorrect.  Aborting.\n",buffer);
           return 12;
         }
+
 
         /* Update running totals. */
         countInvoicesAll++;
@@ -263,21 +272,11 @@ int main(int argc, char *argv[]) {
   }
 
 
-
   /* Make sure that the last fgets() didn't result in a file error. */
   if ( ! feof(csvFile) ) {
     printf("Error reading CSV file %s. Aborting.\n",inFileName);
     return 13;
   }
-
-
-
-
-
-
-
-
-
 
 
   /* Output the summary report. */

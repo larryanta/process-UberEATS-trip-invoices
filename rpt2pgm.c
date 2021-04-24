@@ -1,22 +1,22 @@
 /*
- *   #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
- *   #
- *   #   processUberEatsTripInvoices   Extract dollar amounts from UberEATS pdf trip invoices
- *   #   Copyright (C) 2021  Larry Anta
- *   #
- *   #   This program is free software: you can redistribute it and/or modify
- *   #   it under the terms of the GNU General Public License as published by
- *   #   the Free Software Foundation, either version 3 of the License, or
- *   #   (at your option) any later version.
- *   #
- *   #   This program is distributed in the hope that it will be useful,
- *   #   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   #   GNU General Public License for more details.
- *   #
- *   #   You should have received a copy of the GNU General Public License
- *   #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *   #
+ *   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+ *   @
+ *   @   processUberEatsTripInvoices   Extract dollar amounts from UberEATS pdf trip invoices
+ *   @   Copyright (C) 2021  Larry Anta
+ *   @
+ *   @   This program is free software: you can redistribute it and/or modify
+ *   @   it under the terms of the GNU General Public License as published by
+ *   @   the Free Software Foundation, either version 3 of the License, or
+ *   @   (at your option) any later version.
+ *   @
+ *   @   This program is distributed in the hope that it will be useful,
+ *   @   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   @   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   @   GNU General Public License for more details.
+ *   @
+ *   @   You should have received a copy of the GNU General Public License
+ *   @   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *   @
  *   #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
  */
 
@@ -309,8 +309,6 @@ int main(int argc, char *argv[]) {
   }
 
 
-
-
   /*
    *  There is one node per invoice in our linked-list.  Traverse the entire linked-list
    *  and, for each invoice, extract the fields we need for the next row of the CSV file.
@@ -422,6 +420,8 @@ int main(int argc, char *argv[]) {
         x++;
         while ( *x++ != '\n' )      /* Ignore the rest of this line. */
           ;
+
+
         /*
          *  Prepare to truncate the restaurant's name, if necessary.
          *  We need to reserve 3 bytes for the 2 enclosing double
