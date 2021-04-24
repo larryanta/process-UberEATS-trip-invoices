@@ -1,15 +1,37 @@
+/*
+ *   #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+ *   #
+ *   #   processUberEatsTripInvoices   Extract dollar amounts from UberEATS pdf trip invoices
+ *   #   Copyright (C) 2021  Larry Anta
+ *   #
+ *   #   This program is free software: you can redistribute it and/or modify
+ *   #   it under the terms of the GNU General Public License as published by
+ *   #   the Free Software Foundation, either version 3 of the License, or
+ *   #   (at your option) any later version.
+ *   #
+ *   #   This program is distributed in the hope that it will be useful,
+ *   #   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   #   GNU General Public License for more details.
+ *   #
+ *   #   You should have received a copy of the GNU General Public License
+ *   #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *   #
+ *   #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
 
-// The input and output file names are allowed to be this long:
+/* The input and output file names are allowed to be this long: */
 #define MAXFNAMELEN 100
 
-// The biggest CSV line we can handle:
+/* The biggest CSV line we can handle: */
 #define MAXCSVLINE 200
 
-// Maximum size of the report date string:
+/* Maximum size of the report date string: */
 #define MAXDATESIZE 50
 
 
@@ -48,7 +70,7 @@ int main(int argc, char *argv[]) {
 
 
 
-  // Handle command line arguments.
+  /* Handle command line arguments. */
   if ( argc != 5 ) {
     printf("Usage: %s taxYear 'report date' inputFilename outputFilename\n(The date must be enclosed in single quotes.)\n", argv[0]);
     return 1;
@@ -77,7 +99,7 @@ int main(int argc, char *argv[]) {
   }
 
 
-  j=strlen(reportDate)-2;   // Remove enclosing single quotes in report date.
+  j=strlen(reportDate)-2;   /* Remove enclosing single quotes in report date. */
   for ( i=0; i<j; i++ )
     reportDate[i] = reportDate[i+1];
   reportDate[i]='\0';
@@ -101,7 +123,7 @@ int main(int argc, char *argv[]) {
 
 
 
-  // Open the input and output files.
+  /* Open the input and output files. */
   csvFile=fopen(inFileName,"r");
   if (!csvFile) {
     printf("Opening of CSV file %s failed.  Aborting.\n",inFileName);
@@ -116,7 +138,7 @@ int main(int argc, char *argv[]) {
   }
 
 
-  // Throw away the header line in the CSV file.
+  /* Throw away the header line in the CSV file. */
   resultp = fgets(buffer,MAXCSVLINE-5,csvFile);
   if ( ferror(csvFile) ) {
     printf("Error reading CSV file %s. Aborting.\n",inFileName);
@@ -124,14 +146,14 @@ int main(int argc, char *argv[]) {
   }
 
 
-  // Process all remaining lines of the CSV file.
+  /* Process all remaining lines of the CSV file. */
   resultp = fgets(buffer,MAXCSVLINE-5,csvFile);
   while (resultp) {
-        if ( buffer[strlen(buffer)-1] == '\n' )  // If a newline is present,
-          buffer[strlen(buffer)-1] = '\0';       //   replace it with a nul.
+        if ( buffer[strlen(buffer)-1] == '\n' )  /* If a newline is present, */
+          buffer[strlen(buffer)-1] = '\0';       /*   replace it with a nul. */
 
-        // Position a pointer at the start of the net amount (one byte past the third-last comma).
-        p=buffer+strlen(buffer);     // point to the last byte of the line (the nul byte)
+        /* Position a pointer at the start of the net amount (one byte past the third-last comma). */
+        p=buffer+strlen(buffer);     /* point to the last byte of the line (the nul byte) */
         while ( *p-- != ',' )
           ;
         p--;
@@ -143,7 +165,7 @@ int main(int argc, char *argv[]) {
         p++;
         p++;
 
-        // Grab the net amount.  (Go forward to the second-last comma.)
+        /* Grab the net amount.  (Go forward to the second-last comma.) */
         i=0;
         while ( *p != ',' )
           charNet[i++]=*p++;
@@ -151,7 +173,7 @@ int main(int argc, char *argv[]) {
         p++;
 
 
-        // Grab the HST.  (Go forward to the last comma.)
+        /* Grab the HST.  (Go forward to the last comma.) */
         i=0;
         while ( *p != ',' )
           charHst[i++]=*p++;
@@ -159,15 +181,17 @@ int main(int argc, char *argv[]) {
         p++;
 
 
-        // Grab the gross amount.  (Go forward to the nul.)
+        /* Grab the gross amount.  (Go forward to the nul.) */
         i=0;
         while ( *p != '\0' )
           charGross[i++]=*p++;
         charGross[i]='\0';
 
-        // For 100% accuracy let's avoid floating point values.  Get
-        // rid of the decimal point in the net amount so we can work
-        // with pennies.
+        /*
+         *  For 100% accuracy let's avoid floating point values.  Get
+         *  rid of the decimal point in the net amount so we can work
+         *  with pennies.
+         */
         p = charNet;
         while ( *p++ != '.' )
           ;
@@ -178,7 +202,7 @@ int main(int argc, char *argv[]) {
         p--;
         *p='\0';
 
-        // Do the same for the HST amount.
+        /* Do the same for the HST amount. */
         p = charHst;
         while ( *p++ != '.' )
           ;
@@ -189,7 +213,7 @@ int main(int argc, char *argv[]) {
         p--;
         *p='\0';
 
-        // And for the gross amount.
+        /* And for the gross amount. */
         p = charGross;
         while ( *p++ != '.' )
           ;
@@ -200,7 +224,7 @@ int main(int argc, char *argv[]) {
         p--;
         *p='\0';
 
-        // Convert the net amount string to an integer.
+        /* Convert the net amount string to an integer. */
         errno=0;
         net = strtoul(charNet,&q,10);
         if ( (errno==ERANGE) || (*q!='\0') ) {
@@ -208,7 +232,7 @@ int main(int argc, char *argv[]) {
           return 10;
         }
 
-        // Do the same for the HST amount.
+        /* Do the same for the HST amount. */
         errno=0;
         hst = strtoul(charHst,&q,10);
         if ( (errno==ERANGE) || (*q!='\0') ) {
@@ -216,7 +240,7 @@ int main(int argc, char *argv[]) {
           return 11;
         }
 
-        // And the same for the gross amount.
+        /* And the same for the gross amount. */
         errno=0;
         gross = strtoul(charGross,&q,10);
         if ( (errno==ERANGE) || (*q!='\0') ) {
@@ -224,7 +248,7 @@ int main(int argc, char *argv[]) {
           return 12;
         }
 
-        // Update running totals.
+        /* Update running totals. */
         countInvoicesAll++;
         sumNetAmtsAll   += net;
         sumGrossAmtsAll += gross;
@@ -240,7 +264,7 @@ int main(int argc, char *argv[]) {
 
 
 
-  // Make sure that the last fgets() didn't result in a file error.
+  /* Make sure that the last fgets() didn't result in a file error. */
   if ( ! feof(csvFile) ) {
     printf("Error reading CSV file %s. Aborting.\n",inFileName);
     return 13;
@@ -256,7 +280,7 @@ int main(int argc, char *argv[]) {
 
 
 
-  // Output the summary report.
+  /* Output the summary report. */
   strcpy(reportHeaderLine,"Trip invoice summary for tax year ");
   strcat(reportHeaderLine,reportTaxYear);
   strcat(reportHeaderLine,"        Report date: ");

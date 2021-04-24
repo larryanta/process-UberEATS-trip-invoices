@@ -1,0 +1,30 @@
+      Change Log for the process-UberEATS-trip-invoices Project
+      =========================================================
+
+
+Changes in v1.5 (Apr 24, 2021)
+- Revert to C-style comments
+- Some C compilers balk at C++-style comments
+- Create readme and changelog files
+
+
+Changes in v1.4 (Apr 14, 2021)
+- Modify tripInvoices expression
+
+
+Changes in v1.3 (Apr  4, 2021)
+- Speed up the creation of report2 (CSV file) substantially
+
+
+Changes in v1.2 (Mar 25, 2021)
+- Add more GST/HST/CRA background info
+- Some confusion whether we need to report GST at all
+
+
+Changes in v1.1 (Mar 23, 2021)
+- Add invoice data to report2 (the CSV file)
+- Don't crash if tax point date is missing
+
+
+Changes in v1.0 (Mar 16, 2021)
+- Initial release
