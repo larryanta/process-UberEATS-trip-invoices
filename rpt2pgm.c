@@ -1,24 +1,36 @@
-/*
- *   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
- *   @
- *   @   processUberEatsTripInvoices   Extract dollar amounts from UberEATS pdf trip invoices
- *   @   Copyright (C) 2021  Larry Anta
- *   @
- *   @   This program is free software: you can redistribute it and/or modify
- *   @   it under the terms of the GNU General Public License as published by
- *   @   the Free Software Foundation, either version 3 of the License, or
- *   @   (at your option) any later version.
- *   @
- *   @   This program is distributed in the hope that it will be useful,
- *   @   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   @   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   @   GNU General Public License for more details.
- *   @
- *   @   You should have received a copy of the GNU General Public License
- *   @   along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *   @
- *   #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
- */
+/*====================================================================
+processUberEatsTripInvoices:  Extract dollar amounts from UberEATS pdf
+                              trip invoices
+
+Copyright (C) 2021  Larry Anta
+
+
+You shouldn't have to modify anything in this program.  You can
+compile it if you want, or let the invoking script compile it
+automatically.
+
+Sample build:
+
+    gcc -o rpt2pgm rpt2pgm.c
+======================================================================*/
+
+
+
+
+/*====================================================================
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+======================================================================*/
 
 
 #include <stdio.h>
@@ -29,57 +41,50 @@
 #define FALSE 0
 
 
-/*
- *  You shouldn't have to modify anything in this program.
- *  You can compile it if you want, or let the invoking
- *  script compile it automatically.
- */
+/*=========================================================================
+Return
+ Code     Meaning
+------ --------------------------------------------------------------------
+   0   -normal, no errors detected
+   1   -could not open the raw text file
+   2   -too many invoices
+   3   -not enough memory to hold all trip invoices (malloc failure)
+   4   -byte count mismatch between disk and in-memory copy of text file
+   5   -could not find first byte of first invoice in memory
+   6   -could not find last byte of first invoice in memory
+   7   -could not find last byte of an invoice in memory
+   8   -error opening CSV file
+   9   -error writing to CSV file
+  10   -invoice has no invoice number
+  11   -invoice has no invoice date
+  12   -invoice missing string 'Uber Portier B.V.'
+  13   -invoice missing GST registration number
+  14   -invoice missing net amount
+  15   -invoice missing gross amount
+  16   -error writing to CSV file
+  17   -invalid command line arguments
+  18   -input file name too long
+  19   -output file name too long
+  20   -no memory for first linked-list node
+  21   -no memory for new linked-list node
+=========================================================================*/
 
 
-/*
- *  Return
- *  Code          Meaning
- *  =======  ==================================================================
- *    0      -normal, no errors detected
- *    1      -could not open the raw text file
- *    2      -too many invoices
- *    3      -not enough memory to hold all trip invoices (malloc failure)
- *    4      -byte count mismatch between disk and in-memory copy of text file
- *    5      -could not find first byte of first invoice in memory
- *    6      -could not find last byte of first invoice in memory
- *    7      -could not find last byte of an invoice in memory
- *    8      -error opening CSV file
- *    9      -error writing to CSV file
- *   10      -invoice has no invoice number
- *   11      -invoice has no invoice date
- *   12      -invoice missing string 'Uber Portier B.V.'
- *   13      -invoice missing GST registration number
- *   14      -invoice missing net amount
- *   15      -invoice missing gross amount
- *   16      -error writing to CSV file
- *   17      -invalid command line arguments
- *   18      -input file name too long
- *   19      -output file name too long
- *   20      -no memory for first linked-list node
- *   21      -no memory for new linked-list node
- */
-
-
-/*
- *  How big is an unsigned long int?  Since we don't know
- *  where this program will be compiled, let's assume the
- *  worst case: that an unsigned long int is only 32 bits
- *  wide.  This gives us a usable range of from 0 to
- *  +4,294,967,295.
- */
+/*===================================================
+How big is an unsigned long int?  Since we don't know
+where this program will be compiled, let's assume the
+worst case: that an unsigned long int is only 32 bits
+wide.  This gives us a usable range of from 0 to
++4,294,967,295.
+=====================================================*/
 #define MAX_SIZE 4294967295
 
 
-/*
- *  Set aside this many bytes for the restaurant name, three
- *  of which are for the enclosing double quotes and the nul
- *  byte at the end.
- */
+/*======================================================
+Set aside this many bytes for the restaurant name, three
+of which are for the enclosing double quotes and the nul
+byte at the end.
+========================================================*/
 #define RESTAURANTMAX 53
 
 
@@ -87,10 +92,10 @@
 #define MAXFNAMELEN 100
 
 
-/*
- *  A linked-list.  Each node will hold the starting
- *  and ending addresses of one invoice.
- */
+/*==============================================
+A linked-list.  Each node will hold the starting
+and ending addresses of one invoice.
+================================================*/
 struct invoices {
   char            *firstByte;
   char            *lastByte;
@@ -161,10 +166,10 @@ int main(int argc, char *argv[]) {
   }
 
 
-  /*
-   *  Make sure the file isn't too big.  (Reserve one
-   *  extra byte for the '\0' we're going to append.)
-   */
+  /*=============================================
+  Make sure the file isn't too big.  (Reserve one
+  extra byte for the '\0' we're going to append.)
+  ===============================================*/
   charCountA=0LU;
   while ((ch=getc(rawTextFile)) != EOF) {
     charCountA++;
@@ -176,10 +181,10 @@ int main(int argc, char *argv[]) {
   }
 
 
-  /*
-   *  Allocate enough space to hold the whole file in memory, plus
-   *  one extra byte for the '\0' that we're going to append to it.
-   */
+  /*===========================================================
+  Allocate enough space to hold the whole file in memory, plus
+  one extra byte for the '\0' that we're going to append to it.
+  =============================================================*/
   startBufferp=(char *)malloc(charCountA+1);
   if (!startBufferp) {
     printf("malloc() failed to allocate %lu bytes\nAborting.", charCountA+1);
@@ -188,11 +193,11 @@ int main(int argc, char *argv[]) {
   }
 
 
-  /*
-   *  Read the whole file into memory and append a '\0' byte to the end.
-   *  The nul byte will stop string functions list strstr() from going
-   *  past the last invoice.
-   */
+  /*================================================================
+  Read the whole file into memory and append a '\0' byte to the end.
+  The nul byte will stop string functions list strstr() from going
+  past the last invoice.
+  ==================================================================*/
   rewind(rawTextFile);
   charCountB=0LU;
   w=startBufferp;
@@ -208,29 +213,29 @@ int main(int argc, char *argv[]) {
   *w='\0';
 
 
-  /*
-   *  We now have the whole file in memory and it's been
-   *  nul-terminated.  The disk version is no longer needed.
-   */
+  /*====================================================
+  We now have the whole file in memory and it's been
+  nul-terminated.  The disk version is no longer needed.
+  ======================================================*/
   fclose(rawTextFile);
 
 
-  /*
-   *  The first invoice is preceded by a long row of equal signs.
-   *  Every invoice is also FOLLOWED by a long row of equal signs,
-   *  including the last one.
-   *
-   *  To search for the beginning of an invoice, look for this
-   *  string of characters: '===\nIssued on behalf of '.  All
-   *  invoices start at the letter 'I' in the word 'Issued'.
-   *
-   *  To find the end of a given invoice, look for this string of
-   *  characters: '\n==='.  Each invoice ends at the character
-   *  just before the newline.
-   *
-   *  Let's now get the starting and ending addresses of the very
-   *  first invoice.
-   */
+  /*==========================================================
+  The first invoice is preceded by a long row of equal signs.
+  Every invoice is also FOLLOWED by a long row of equal signs,
+  including the last one.
+
+  To search for the beginning of an invoice, look for this
+  string of characters: '===\nIssued on behalf of '.  All
+  invoices start at the letter 'I' in the word 'Issued'.
+
+  To find the end of a given invoice, look for this string of
+  characters: '\n==='.  Each invoice ends at the character
+  just before the newline.
+
+  Let's now get the starting and ending addresses of the very
+  first invoice.
+  ============================================================*/
   w=strstr(startBufferp,"===\nIssued on behalf of ");
   if ( !w ) {
     puts("Couldn't find beginning of first invoice.  Aborting.");
@@ -247,11 +252,11 @@ int main(int argc, char *argv[]) {
   endp=w-1;            /* the character just prior to the newline */
 
 
-  /*
-   *  We can now create the first node in the linked list.  There is one
-   *  node for each invoice.  In each node, we store the starting and
-   *  ending addresses of an invoice.
-   */
+  /*================================================================
+  We can now create the first node in the linked list.  There is one
+  node for each invoice.  In each node, we store the starting and
+  ending addresses of an invoice.
+  ==================================================================*/
   p = (struct invoices *) malloc(sizeof(struct invoices));
   if ( !p ) {
     puts("No memory for first linked-list node.  Aborting.");
@@ -264,13 +269,13 @@ int main(int argc, char *argv[]) {
   firstNode = prevNode = p;
 
 
-  /*
-   *  Find all remaining invoices and add them to the linked-list.
-   *
-   *  Our work pointer, w, was left pointing at the end of the first
-   *  invoice.  Continue using w to find all the remaining invoices.
-   *  (When there are no more to be found, w becomes NULL.)
-   */
+  /*============================================================
+  Find all remaining invoices and add them to the linked-list.
+
+  Our work pointer, w, was left pointing at the end of the first
+  invoice.  Continue using w to find all the remaining invoices.
+  (When there are no more to be found, w becomes NULL.)
+  ==============================================================*/
   w=strstr(w,"===\nIssued on behalf of ");
   while (w) {
     startp=w+4;          /* the 'I' in Issued */
@@ -303,18 +308,21 @@ int main(int argc, char *argv[]) {
     cleanup(8,NULL,NULL,startBufferp,firstNode);
     return 8;
   }
-  if (!fprintf(csvFile,"InvoiceNumber,InvoiceDate,TaxPointDate,Restaurant,GSTNumber,TotalNet,TotalHST,GrossAmt\n")) {
+  if (!fprintf(csvFile,"InvoiceNumber,InvoiceDate,TaxPointDate,Restaurant,"
+                       "GSTNumber,TotalNet,TotalHST,GrossAmt\n")) {
     puts("Error writing to CSV file.  Aborting.");
     cleanup(9,NULL,csvFile,startBufferp,firstNode);
     return 9;
   }
 
 
-  /*
-   *  There is one node per invoice in our linked-list.  Traverse the entire linked-list
-   *  and, for each invoice, extract the fields we need for the next row of the CSV file.
-   *  Output that row.
-   */
+
+
+  /*=================================================================================
+  There is one node per invoice in our linked-list.  Traverse the entire linked-list 
+  and, for each invoice, extract the fields we need for the next row of the CSV file.
+  Output that row.
+  ===================================================================================*/
   invCount=0;
   p = firstNode;
   while (p) {
@@ -324,11 +332,11 @@ int main(int argc, char *argv[]) {
         endp   = p->lastByte;  /* the address of the last byte of this invoice */
 
 
-        /*
-         *  Every invoice should have an invoice number.  It's on a line that begins with the
-         *  text 'Invoice Number:  '.  (Note the two spaces after the colon.)  Scoop up the
-         *  rest of the line and replace the '\n' at the end with a '\0'.
-         */
+        /*===============================================================================
+        Every invoice should have an invoice number.  It's on a line that begins with the
+        text 'Invoice Number:  '.  (Note the two spaces after the colon.)  Scoop up the
+        rest of the line and replace the '\n' at the end with a '\0'.
+        =================================================================================*/
         x=strstr(startp,"\nInvoice Number:  ");
         if ( !x || (x>endp) ) {
           puts("\nInvoice found without an invoice number.  Aborting.");
@@ -343,10 +351,10 @@ int main(int argc, char *argv[]) {
         *w='\0';
 
 
-        /*
-         *  Do the same for the invoice date but enclose the date in double quotes
-         *  since it contains a comma.  (CSV-file rules require this.)
-         */
+        /*====================================================================
+        Do the same for the invoice date but enclose the date in double quotes
+        since it contains a comma.  (CSV-file rules require this.)
+        ======================================================================*/
         x=strstr(startp,"\nInvoice Date:  ");
         if ( !x || (x>endp) ) {
           printf("\nInvoice %s does not have an invoice date.  Aborting.\n",invNum);
@@ -362,56 +370,56 @@ int main(int argc, char *argv[]) {
         *w='\0';
 
 
-        /*
-         *  The tax point date is a little tricky.  It's not always present.
-         *
-         *  Sometime around March 15, 2021, Uber seems to have stopped putting
-         *  tax point dates in trip invoices.  Even an invoice that contains
-         *  the text 'Tax Point Date' doesn't necessarily have one.  (All
-         *  invoices still contain an invoice date though.)
-         *
-         *  I've noticed that invoices that actually do contain a tax point date
-         *  also have a line that starts with 'Delivery service'.  In that case,
-         *  the tax point date is the entire line immediately above the
-         *  'Delivery service' line.
-         *
-         *  As with the invoice date, the tax point date contains a comma, so we
-         *  have to enclose it in double quotes.
-         *
-         *  If an invoice does NOT contain a tax point date, we set the tax point
-         *  date field to 'notSpecified' in the CSV file.
-         */
+        /*===================================================================
+        The tax point date is a little tricky.  It's not always present.
+
+        Sometime around March 15, 2021, Uber seems to have stopped putting
+        tax point dates in trip invoices.  Even an invoice that contains
+        the text 'Tax Point Date' doesn't necessarily have one.  (All
+        invoices still contain an invoice date though.)
+
+        I've noticed that invoices that actually do contain a tax point date
+        also have a line that starts with 'Delivery service'.  In that case,
+        the tax point date is the entire line immediately above the
+        'Delivery service' line.
+
+        As with the invoice date, the tax point date contains a comma, so we
+        have to enclose it in double quotes.
+
+        If an invoice does NOT contain a tax point date, we set the tax point
+        date field to 'notSpecified' in the CSV file.
+        =====================================================================*/
         strcpy(taxPointDate,"notSpecified");
         x=strstr(startp,"\nDelivery service");
         if ( x && (x<endp) ) {
           w=taxPointDate;
           *w++='\"';
           x--;
-          while ( *x != '\n' )    /* Back up to the previous newline... */
+          while ( *x != '\n' )                    /* Back up to the previous newline... */
             x--;
           x++;
-          while ( *x != '\n' )    /* ...and go forward again, capturing the date. */
+          while ( *x != '\n' )          /* ...and go forward again, capturing the date. */
             *w++ = *x++;
-          w--;                    /* There's always a blank at the end of the tax point date.  Remove it. */
+          w--;  /* There's always a blank at the end of the tax point date.  Remove it. */
           *w++='\"';
           *w='\0';
         }
 
 
-        /*
-         *  Every invoice has a restaurant name.
-         *
-         *  It's on the line following the line that starts with the
-         *  text 'Uber Portier B.V.'.
-         *
-         *  It's conceivable that a restaurant's name contains a comma,
-         *  so, to be safe, we always enclose the name in double quotes.
-         *  We also truncate the restaurant's name if it's too long.
-         *
-         *  Pray that we never see a restaurant name with a double
-         *  quote in it.  (We would need to modify this code to double
-         *  each of those double quotes.)
-         */
+        /*==========================================================
+        Every invoice has a restaurant name.
+
+        It's on the line following the line that starts with the
+        text 'Uber Portier B.V.'.
+
+        It's conceivable that a restaurant's name contains a comma,
+        so, to be safe, we always enclose the name in double quotes.
+        We also truncate the restaurant's name if it's too long.
+
+        Pray that we never see a restaurant name with a double
+        quote in it.  (We would need to modify this code to double
+        each of those double quotes.)
+        ============================================================*/
         x=strstr(startp,"\nUber Portier B.V.");
         if ( !x || (x>endp) ) {
           printf("\nInvoice %s does not contain 'Uber Portier B.V.'.  Aborting.\n",invNum);
@@ -421,13 +429,11 @@ int main(int argc, char *argv[]) {
         x++;
         while ( *x++ != '\n' )      /* Ignore the rest of this line. */
           ;
-
-
-        /*
-         *  Prepare to truncate the restaurant's name, if necessary.
-         *  We need to reserve 3 bytes for the 2 enclosing double
-         *  quotes and the string's terminating nul.
-         */
+        /*======================================================
+        Prepare to truncate the restaurant's name, if necessary.
+        We need to reserve 3 bytes for the 2 enclosing double
+        quotes and the string's terminating nul.
+        ========================================================*/
         w=restaurantName;
         *w++='\"';
         j = RESTAURANTMAX - 3;    /* At most, copy this many bytes. */
@@ -440,13 +446,13 @@ int main(int argc, char *argv[]) {
         *w='\0';
 
 
-        /*
-         *  Every invoice has two GST registration numbers, one for the
-         *  restaurant and one for the driver.
-         *
-         *  The restaurant's GST number appears first and is on a line that
-         *  starts with the text 'GST Registration Number: '.
-         */
+        /*=============================================================
+        Every invoice has two GST registration numbers, one for the
+        restaurant and one for the driver.
+
+        The restaurant's GST number appears first and is on a line that
+        starts with the text 'GST Registration Number: '.
+        ===============================================================*/
         x=strstr(startp,"\nGST Registration Number: ");
         if ( !x || (x>endp) ) {
           printf("\nInvoice %s does not contain a GST registration number.  Aborting.\n",invNum);
@@ -460,14 +466,14 @@ int main(int argc, char *argv[]) {
         *w++='\0';
 
 
-        /*
-         *  Every invoice has a net amount.  It's the value found on
-         *  the line following the line that contains only this text:
-         *  'Total Net '.
-         *
-         *  The value starts at the first byte of the line and is
-         *  followed by at least one blank.
-         */
+        /*=======================================================
+        Every invoice has a net amount.  It's the value found on
+        the line following the line that contains only this text:
+        'Total Net '.
+
+        The value starts at the first byte of the line and is
+        followed by at least one blank.
+        =========================================================*/
         x=strstr(startp,"\nTotal Net \n");
         if ( !x || (x>endp) ) {
           printf("\nInvoice %s does not contain a net amount.  Aborting.\n",invNum);
@@ -481,14 +487,14 @@ int main(int argc, char *argv[]) {
         *w++='\0';
 
 
-        /*
-         *  Every invoice has a gross amount.  It's the value found on
-         *  the line following the line that contains only this text:
-         *  'Gross Amount '.
-         *
-         *  The value starts at the first byte of the line and is
-         *  followed by at least one blank.
-         */
+        /*========================================================
+        Every invoice has a gross amount.  It's the value found on
+        the line following the line that contains only this text:
+        'Gross Amount '.
+
+        The value starts at the first byte of the line and is
+        followed by at least one blank.
+        ==========================================================*/
         x=strstr(startp,"\nGross Amount \n");
         if ( !x || (x>endp) ) {
           printf("\nInvoice %s does not contain a gross amount.  Aborting.\n",invNum);
@@ -502,17 +508,17 @@ int main(int argc, char *argv[]) {
         *w++='\0';
 
 
-        /*
-         *  Not all invoices contain an HST amount.  If the invoice has
-         *  a line that contains only the text 'Total HST Amount ',
-         *  then the HST amount is on the line following that one.
-         *
-         *  The HST starts at the first byte and is followed by at
-         *  least one blank.
-         *
-         *  If the invoice does not have an HST amount, we set the
-         *  HST value to '0.00'.
-         */
+        /*=========================================================
+        Not all invoices contain an HST amount.  If the invoice has
+        a line that contains only the text 'Total HST Amount ',
+        then the HST amount is on the line following that one.
+
+        The HST starts at the first byte and is followed by at
+        least one blank.
+
+        If the invoice does not have an HST amount, we set the
+        HST value to '0.00'.
+        ===========================================================*/
         strcpy(hstAmt,"0.00");
         x=strstr(startp,"\nTotal HST Amount \n");
         if ( x && (x<endp) ) {
@@ -525,7 +531,8 @@ int main(int argc, char *argv[]) {
 
 
         /* We have all the fields we need.  Add a new row to the CSV file. */
-        if (!fprintf(csvFile,"%s,%s,%s,%s,%s,%s,%s,%s\n",invNum,invDate,taxPointDate,restaurantName,gstNumber,netAmt,hstAmt,grossAmt)) {
+        if (!fprintf(csvFile,"%s,%s,%s,%s,%s,%s,%s,%s\n",invNum,invDate,taxPointDate,restaurantName,
+                                                         gstNumber,netAmt,hstAmt,grossAmt)) {
           puts("Error writing to CSV file.  Aborting.");
           cleanup(16,NULL,csvFile,startBufferp,firstNode);
           return 16;
@@ -547,15 +554,15 @@ int main(int argc, char *argv[]) {
 
 
 void cleanup(int code, FILE *raw, FILE *csv, char *buffp, struct invoices *llistp) {
-  /*
-   *  There are many points in the mainline where an error is detected and control
-   *  must be returned to the operating system.  Depending on where we are in our
-   *  processing, there may be files we've opened that need to be closed or
-   *  dynamic memory that we've allocated that needs to be freed.
-   *
-   *  We're passed an action code to tell us what to clean up.  (Doing all the
-   *  clean up in a function helps keep the mainline uncluttered.)
-   */
+  /*==========================================================================
+  There are many points in the mainline where an error is detected and control
+  must be returned to the operating system.  Depending on where we are in our
+  processing, there may be files we've opened that need to be closed or
+  dynamic memory that we've allocated that needs to be freed.
+
+  We're passed an action code to tell us what to clean up.  (Doing all the
+  clean up in a function helps keep the mainline uncluttered.)
+  ============================================================================*/
 
   struct invoices *p, *q;
 

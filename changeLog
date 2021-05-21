@@ -1,6 +1,10 @@
       Change Log for the process-UberEATS-trip-invoices Project
       =========================================================
 
+Changes in v1.6 (May 21, 2021)
+- Stop using python (all C and Korn shell now)
+- Runs 120 X faster than v1.0 did
+
 
 Changes in v1.5 (Apr 24, 2021)
 - Revert to C-style comments

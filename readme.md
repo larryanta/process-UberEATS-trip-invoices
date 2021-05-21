@@ -5,24 +5,25 @@ See GPL file: LICENSE.txt
 General Info
 ============
 
-The processUberEatsTripInvoices korn shell script extracts dollar amounts from the
+The processUberEatsTripInvoices Korn shell script extracts dollar amounts from the
 trip invoices (PDF files) that Uber Eats makes available to its drivers. This can
 assist with GST/HST statement filings in Ontario and, perhaps, other provinces
 in Canada. 
 
-There are two lines that must be modifed in the script before you can use it.
-(See the script itself for details.)
+There is one line that must be modifed in the script before you can use it.  (See
+the script itself for details.)
 
 Also, before running the script, these packages must be present on your Linux
 system:
 
      ksh
-     python
-     PyPDF2
+     zlib
+     zlib-devel   (recommended, but may not be necessary)
 
-The script invokes two C programs.  You can either compile them yourself
-beforehand or let the script do it for you automatically.
-
+The script invokes three C programs.  You can either compile them yourself
+beforehand or let the script do it for you automatically.  Program rpt1pgm.c
+must be linked with the -lz switch to access the zlib compression library,
+libz.so.  (A makefile is provided if you wish to use it.)
 
 
 Where do I find my UberEATS trip invoices?
@@ -31,7 +32,7 @@ Where do I find my UberEATS trip invoices?
 As an UberEATS delivery person you can find your trip invoices by logging into your
 driver account at drivers.uber.com and clicking on the INVOICES link.
 
-Each one is a PDF file.  Download them all to your Linx box.
+Each invoice is a PDF file.  Download them all to your Linux box.
 
 
 
@@ -81,7 +82,8 @@ extracting the relevant fields directly from the PDF files themselves and adding
 the dollar amounts that you will need when filing your GST/HST statement.
 
 The tax year is embedded into each trip invoice's file name.  For example, the trip invoice
-named invoice-XXXXXXXX-03-2021-0000245.pdf was the 245th invoice for tax year 2021.
+named invoice-XXXXXXXX-03-2021-0000245.pdf was the 245th invoice for tax year 2021.  (The
+X's vary from driver to driver I think.)
 
 Unfortunately, you have to download each trip invoice pdf file manually and store them
 somewhere on your Linux box.  If you do it daily or weekly it's not so bad.
@@ -92,18 +94,29 @@ return.
 
    report1:  the raw text contained in all the PDF files for the given tax year with
              each invoice separated from the next with a row of equal signs
-   report2:  selected fields from the same PDF files (in CSV format)
+   report2:  selected fields from the same PDF files (in CSV format, in case you want
+             to import them into a spreadsheet)
    report3:  grand totals of all the trip invoices (and of just those with HST applied)
 
 Report3 has separate totals (with/without HST) in case you registered for GST/HST in that
 tax year and you need to distinguish between the two time periods, before and after
 registering.
 
-Report1 is created by the script directly.  The script invokes the C programs to
-generate report2 and report3.
+The script invokes the C programs to generate the three reports.
 
 
 
--------------------
+References
+==========
+ - PDF Reference, Third Edition, Adobe
+ - https://en.wikipedia.org/wiki/Ascii85
+ - RFCs 1950 & 1951
+ - https://zlib.net/zlib_how.html
+ - https://marknelson.us/posts/1997/01/01/zlib-engine.html
+
+
+
+Author
+======
 Larry Anta
 larryanta@gmail.com

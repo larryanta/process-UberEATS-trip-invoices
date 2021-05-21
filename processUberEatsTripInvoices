@@ -1,5 +1,6 @@
 #!/bin/ksh
-Version=1.5
+
+Version=1.6
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #
@@ -21,11 +22,11 @@ Version=1.5
 #
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-print $0 Version: $Version
+x=$0
+print "${x##*/} v$Version"
 
 # A tax year must be supplied on the command line.
-if [[ $# != 1 ]]
-then
+if [[ $# != 1 ]]; then
   print Usage: $0 taxyear
   exit 1
 fi
@@ -34,19 +35,29 @@ fi
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #
-# You must edit the values of PyPDF2location and tripInvoices below.  PyPDF2location is
-# where you installed the PyPDF2 package, while tripInvoices is where this script will
-# search for Uber Eats trip invoices.  Replace the Xs with your own Uber-provided invoice
-# name string.
+# You must edit the tripInvoices location below.  It's where this script will search for
+# Uber Eats trip invoices (PDF files).  Also, replace the Xs with your own Uber-provided
+# invoice name string.
 #
 #
-eval PyPDF2location="~jdoe/PyPDF2-1.26.0"
 eval tripInvoices="~jdoe/UberEATS/TripInvoicePDFs/invoice-XXXXXXXX-03-$TaxYear-*.pdf"
 #
 #
-# This script compiles the two C programs it needs (rpt2pgm.c and rpt3pgm.c), or you
-# can compile them yourself if you wish.
+# This script compiles the three C programs it needs (rpt1pgm.c, rpt2pgm.c and rpt3pgm.c),
+# or you can compile them yourself if you wish.
 #
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+
+
+
+
+
+
+
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 #
 # You shouldn't have to change any lines below this one.  Nor should you have to
 # change anything in the C programs.
@@ -64,51 +75,97 @@ report3Name="report.TripInvoices.TY$TaxYear.summary"
 # If the '*' is still present in the trip invoice search string, then
 # there are no invoices for that year and we can go no further.
 echo $tripInvoices | grep '*' > /dev/null 2>&1
-if [[ $? == 0 ]]
-then
+if [[ $? == 0 ]]; then
   print No trip invoices found for tax year $TaxYear
   exit 2
 fi
 
 
-# Report1 is created by this script.  To increase speed, report2 and
-# report3 are created by invoking C programs:
+# The three reports are created by these C programs:
 #
-#   Source File  Language  Binary executable
-#   ===========  ========  =================
-#    rpt2pgm.c       C         rpt2pgm
-#    rpt3pgm.c       C         rpt3pgm
+#   Source File  Binary executable
+#   ===========  =================
+#    rpt1pgm.c       rpt1pgm
+#    rpt2pgm.c       rpt2pgm
+#    rpt3pgm.c       rpt3pgm
 
 
-# Make sure binary executable rpt2pgm is ready to run.  Compile it if necessary.
-if [[ ! -x rpt2pgm ]] then;
-  if [[ ! -s rpt2pgm.c ]] then;
-    print "Need to compile C program rpt2pgm.c but can't find it.  Aborting."
+# If binary executable rpt1pgm does not already exist, we need to create it from
+# source file rpt1pgm.c.  But rpt1pgm.c needs header file zlib.h which may or
+# may not be present on your system.  (The zlib.h header file is supplied by
+# package zlib-devel.)
+#
+# Ideally we would check whether /usr/include/zlib.h exists but we can't assume
+# that header files are stored in /usr/include on all systems.  If we can compile
+# tiny test program checkForzlib.c, then zlib.h is already present and we're good
+# to go.
+#
+# Otherwise we could try using our own supplied header file, _zlib.h, by renaming
+# it to zlib.h.
+if [[ ! -x rpt1pgm ]]; then
+  gcc -E checkForzlibh.c >/dev/null 2>&1
+  if [[ $? != 0 ]]; then
+    mv _zlib.h zlib.h
+    print "\n=========================================================="
+    print "Couldn't find a zlib.h header file on your system."
+    print "Attempting to use one supplied with this product."
+    print " "
+    print "If errors occur, the following is recommended:"
+    print "  1. rm rpt1pgm"
+    print "  2. mv zlib.h _zlib.h"
+    print "  3. install package zlib-devel using your package manager"
+    print "  4. rerun this script"
+    print "==========================================================\n"
+  fi
+fi
+
+
+# Make sure binary executable rpt1pgm is ready to run.  Compile it if necessary.
+if [[ ! -x rpt1pgm ]]; then
+  if [[ ! -s rpt1pgm.c ]]; then
+    print "Need to compile C program rpt1pgm.c but can't find it.  Aborting."
     exit 3
   else
-    print "Compiling rpt2pgm.c..."
-    print "cc -o rpt2pgm rpt2pgm.c"
-    cc -o rpt2pgm rpt2pgm.c
-    if [[ ! -x rpt2pgm ]] then;
-      print "Compilation of rpt2pgm.c must have failed.  Aborting."
+    print "Compiling rpt1pgm.c..."
+    print "gcc -lz -o rpt1pgm rpt1pgm.c"
+    gcc -lz -o rpt1pgm rpt1pgm.c
+    if [[ ! -x rpt1pgm ]]; then
+      print "Compilation of rpt1pgm.c must have failed.  Aborting."
       exit 4
     fi
   fi
 fi
 
 
-# Same for rpt3pgm.
-if [[ ! -x rpt3pgm ]] then;
-  if [[ ! -s rpt3pgm.c ]] then;
-    print "Need to compile C program rpt3pgm.c but can't find it.  Aborting."
+# Same for rpt2pgm...
+if [[ ! -x rpt2pgm ]]; then
+  if [[ ! -s rpt2pgm.c ]]; then
+    print "Need to compile C program rpt2pgm.c but can't find it.  Aborting."
     exit 5
   else
-    print "Compiling rpt3pgm.c..."
-    print "cc -o rpt3pgm rpt3pgm.c"
-    cc -o rpt3pgm rpt3pgm.c
-    if [[ ! -x rpt3pgm ]] then;
-      print "Compilation of rpt3pgm.c must have failed.  Aborting."
+    print "Compiling rpt2pgm.c..."
+    print "gcc -o rpt2pgm rpt2pgm.c"
+    gcc -o rpt2pgm rpt2pgm.c
+    if [[ ! -x rpt2pgm ]]; then
+      print "Compilation of rpt2pgm.c must have failed.  Aborting."
       exit 6
+    fi
+  fi
+fi
+
+
+# ...and rpt3pgm.
+if [[ ! -x rpt3pgm ]]; then
+  if [[ ! -s rpt3pgm.c ]]; then
+    print "Need to compile C program rpt3pgm.c but can't find it.  Aborting."
+    exit 7
+  else
+    print "Compiling rpt3pgm.c..."
+    print "gcc -o rpt3pgm rpt3pgm.c"
+    gcc -o rpt3pgm rpt3pgm.c
+    if [[ ! -x rpt3pgm ]]; then
+      print "Compilation of rpt3pgm.c must have failed.  Aborting."
+      exit 8
     fi
   fi
 fi
@@ -121,51 +178,42 @@ rm -f $report3Name
 
 
 # Create report1 showing the raw text from all the invoices for the given tax year.
-# Separate the invoices from each other with a row of equal signs.
 print Generating report1...
+# Create the heading first.
 exec 4> $report1Name
 echo "Raw text of all trip invoices for tax year $TaxYear        Report date: $todaysDate"              >&4
 echo "================================================================================================" >&4
+exec 4>&-  # Explicitly close report1.
+# Then append all the text from all the invoices.
 invoiceCount=0
 for x in $tripInvoices
 do
-  # Extract the raw text from the PDF file.
-  python <<EOF
-# This Python program, adapted from https://automatetheboringstuff.com/chapter13,
-# extracts the text from the first page of a PDF file.
-import sys
-sys.path.append("$PyPDF2location")
-import PyPDF2
-reload(sys)
-sys.setdefaultencoding('utf8')
-pdfFileObj = open("$x", 'rb')
-pdfReader = PyPDF2.PdfFileReader(pdfFileObj)
-pdfReader.numPages
-pageObj = pdfReader.getPage(0)
-print pageObj.extractText()
-EOF
-  echo "================================================================================================"
+  ./rpt1pgm $x $report1Name
+  rc=$?
+  if ((rc!=0)); then
+    print "Error adding to report1.  (RC:$rc)  Aborting."
+    exit 9
+  fi
   (( invoiceCount+=1 ))
-  print -n "$invoiceCount ">$(tty)
-done >&4
-exec 4>&-  # Explicity close report1.
+  print -n "$invoiceCount "
+done
 echo ' '
 
 
 # Create report2, a CSV file with selected fields from the trip invoices.
 ./rpt2pgm $report1Name $report2Name
 rc=$?
-if ((rc!=0)) then;
+if ((rc!=0)); then
   print "Error creating report2.  (RC:$rc)  Aborting."
-  exit 7
+  exit 10
 fi
 
 # Create a summary report (report3).
 ./rpt3pgm $TaxYear "'$todaysDate'" $report2Name $report3Name
 rc=$?
-if ((rc!=0)) then;
+if ((rc!=0)); then
   print "Error creating report3.  (RC:$rc)  Aborting."
-  exit 8
+  exit 11
 fi
 
 
