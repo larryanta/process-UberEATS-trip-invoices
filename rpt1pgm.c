@@ -1,4 +1,4 @@
-/*====================================================================
+/*==================================================================== 
 processUberEatsTripInvoices:  Extract dollar amounts from UberEATS pdf
                               trip invoices
 

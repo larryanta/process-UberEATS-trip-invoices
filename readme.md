@@ -1,4 +1,4 @@
-Licensing
+Licensing 
 =========
 See GPL file: LICENSE.txt
 

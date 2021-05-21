@@ -1,4 +1,4 @@
-all: rpt1pgm rpt2pgm rpt3pgm
+all: rpt1pgm rpt2pgm rpt3pgm 
 	rm -f rpt1pgm.o
 	rm -f rpt2pgm.o
 	rm -f rpt3pgm.o
